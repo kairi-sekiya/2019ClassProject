@@ -7,6 +7,8 @@
 
 #include "main.h"
 #include "framework.h"
+#include "Common.h"
+
 #include <crtdbg.h>
 #include <tchar.h>
 #include <stdio.h>
@@ -61,7 +63,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 	//  (1)-b ウィンドウの生成
 	hWnd = CreateWindowEx(WS_EX_OVERLAPPEDWINDOW, wcex.lpszClassName, _T("Windows01"),
 		WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
-		CW_USEDEFAULT, 0, 852, 480, NULL, NULL, hInstance, NULL);
+		CW_USEDEFAULT, 0, WINDOW_WIDTH,WINDOW_HEIGHT, NULL, NULL, hInstance, NULL);
 	if (!hWnd)
 		return FALSE;
 
@@ -70,8 +72,8 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 	GetWindowRect(hWnd, &bounds);
 	GetClientRect(hWnd, &client);
 	MoveWindow(hWnd, bounds.left, bounds.top,
-		852 * 2 - client.right,
-		480 * 2 - client.bottom,
+		WINDOW_WIDTH * 2 - client.right,
+		WINDOW_HEIGHT * 2 - client.bottom,
 		false);
 
 	//  ウィンドウの再表示
@@ -119,7 +121,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 		);
 		if (SUCCEEDED(hr)) {
 			//  jpg ファイル test.jpg の読み込み
-			hr = pFactory->CreateDecoderFromFilename(L"res\\test.jpg", 0,
+			hr = pFactory->CreateDecoderFromFilename(L"res\\BackGround.jpg", 0,
 				GENERIC_READ, WICDecodeMetadataCacheOnDemand, &pDecoder);
 			if (SUCCEEDED(hr)) {
 				hr = pDecoder->GetFrame(0, &pFrame);
@@ -155,7 +157,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 				pDecoder = NULL;
 			}
 
-			//  png ファイル smile2.png の読み込み
+			//  png ファイルの読み込み
 			hr = pFactory->CreateDecoderFromFilename(L"res\\torannpu-illust49.png", 0,
 				GENERIC_READ, WICDecodeMetadataCacheOnDemand, &pDecoder);
 			if (SUCCEEDED(hr)) {
@@ -281,8 +283,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				D2D1_RECT_F drc, src;
 				drc.left = 0;
 				drc.top = 0;
-				drc.right = drc.left + sz.width;
-				drc.bottom = drc.top + sz.height;
+				drc.right = drc.left + sz.width * DEFAULT_CARD_SIZE;
+				drc.bottom = drc.top + sz.height * DEFAULT_CARD_SIZE;
 				src.left = 0;
 				src.top = 0;
 				src.right = sz.width;
