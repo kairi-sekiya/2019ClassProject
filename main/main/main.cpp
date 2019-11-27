@@ -8,7 +8,7 @@
 #include "main.h"
 #include "framework.h"
 #include "Common.h"
-
+#include "Card.h"
 #include <crtdbg.h>
 #include <tchar.h>
 #include <stdio.h>
@@ -262,6 +262,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			g_pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity()); //!< Transform の設定
 
 			g_pRenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::DarkBlue));   //!< 画面のクリア
+		
 
 			if (g_pBG != NULL) {
 				D2D1_SIZE_U sz = g_pBG->GetPixelSize();
@@ -294,6 +295,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			g_pRenderTarget->EndDraw();  //  描画終了
 		}
+
 		ValidateRect(hWnd, NULL);
 
 		break;
