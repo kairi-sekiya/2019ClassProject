@@ -284,8 +284,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				D2D1_RECT_F drc, src;
 				drc.left = 0;
 				drc.top = 0;
-				drc.right = drc.left + sz.width * DEFAULT_CARD_SIZE;
-				drc.bottom = drc.top + sz.height * DEFAULT_CARD_SIZE;
+				drc.right = drc.left + sz.width;
+				drc.bottom = drc.top + sz.height;
 				src.left = 0;
 				src.top = 0;
 				src.right = sz.width;

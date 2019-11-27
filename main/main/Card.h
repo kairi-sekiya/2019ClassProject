@@ -6,9 +6,19 @@
 class Card
 {
 public:
-	Card(float scale,POINT point, ID2D1Bitmap** bitmap, D2D1_SIZE_U* size);
+	Card(float scale,POINT point, 
+		IWICImagingFactory*& pFactory,
+		IWICBitmapDecoder*& pDecoder,
+		IWICBitmapFrameDecode*& pFrame,
+		IWICFormatConverter*& pFormatConverter,
+		WICPixelFormatGUID& pixelFormat,
+		HRESULT& hr,
+		D2D1_BITMAP_PROPERTIES bitmapProperties
+		);
+
 	~Card();
 
+public:
 	void Draw(ID2D1HwndRenderTarget* g_pRenderTarget);
 	void SetTargetPoint(POINT targetPoint);	// 目的地を設定する
 	void Move(float size);				// targetPointへ少し移動する
@@ -16,11 +26,11 @@ public:
 	void TurnOver();						// fromtOrBack を裏返す
 
 private:
-	ID2D1Bitmap* backPicture;	// 裏側画像データ 
-	D2D1_SIZE_U backPictureSize;		// 画像データの縦横の大きさ
+	ID2D1Bitmap* backPicture;		// 裏側画像データ 
+	D2D1_SIZE_U backPictureSize;	// 画像データの縦横の大きさ
 
-	ID2D1Bitmap* frontPicture;	// 表側画像データ
-	D2D1_SIZE_U frontPictureSize;		// 画像データの縦横の大きさ
+	ID2D1Bitmap* frontPicture;		// 表側画像データ
+	D2D1_SIZE_U frontPictureSize;	// 画像データの縦横の大きさ
 	
 	POINT beforeMovePoint;		// Moveで移動する際に移動前の位置を保存
 	POINT nowPoint;				// 現在の位置を保存する
@@ -34,6 +44,5 @@ private:
 	bool isFront = false;		// 表裏 falseで裏
 
 private:
-
 };
 

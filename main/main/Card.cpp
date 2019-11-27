@@ -3,21 +3,23 @@
 #include <wincodec.h>
 #include <d2d1.h>
 
-Card::Card(float scale,POINT point,ID2D1Bitmap** bitmap,D2D1_SIZE_U* size)
-{
+extern ID2D1HwndRenderTarget* g_pRenderTarget;
+Card::Card(float scale, POINT point,
+		IWICImagingFactory*& pFactory,
+		IWICBitmapDecoder*& pDecoder,
+		IWICBitmapFrameDecode*& pFrame,
+		IWICFormatConverter*& pFormatConverter,
+		WICPixelFormatGUID& pixelFormat,
+		HRESULT& hr,
+		D2D1_BITMAP_PROPERTIES bitmapProperties
+) {
 	mScale = scale;
 	beforeMovePoint = nowPoint = point;
-	
-	HRESULT hr = CoCreateInstance(
-		CLSID_WICImagingFactory,
-		nullptr,
-		CLSCTX_INPROC_SERVER,
-		IID_PPV_ARGS(&pFactory)
-	);
 
-	if (SUCCEEDED(hr)) {
+	if (backPicture = NULL) 
+	{
 		//  png ファイルの読み込み
-		hr = pFactory->CreateDecoderFromFilename(L"res\\torannpu-illust49.png", 0,
+		hr = pFactory->CreateDecoderFromFilename(L"res\\Back.png", 0,
 			GENERIC_READ, WICDecodeMetadataCacheOnDemand, &pDecoder);
 		if (SUCCEEDED(hr)) {
 			hr = pDecoder->GetFrame(0, &pFrame);
@@ -32,7 +34,7 @@ Card::Card(float scale,POINT point,ID2D1Bitmap** bitmap,D2D1_SIZE_U* size)
 						pFrame->GetSize(&width, &height);
 						sizBitmap.width = width;
 						sizBitmap.height = height;
-						hr = g_pRenderTarget->CreateBitmap(sizBitmap, bitmapProperties, &g_pFG);
+						hr = g_pRenderTarget->CreateBitmap(sizBitmap, bitmapProperties, &frontPicture);
 						if (SUCCEEDED(hr)) {
 							BYTE* pBuffer = new BYTE[4 * width * height];
 							double frac = 1.0 / 255.0;
@@ -48,27 +50,62 @@ Card::Card(float scale,POINT point,ID2D1Bitmap** bitmap,D2D1_SIZE_U* size)
 									p += 4;
 								}
 							}
-							g_pFG->CopyFromMemory(NULL, pBuffer, width * 4);
+							frontPicture->CopyFromMemory(NULL, pBuffer, width * 4);
 							delete[] pBuffer;
 						}
 
 
 					}
-					pFormatConverter->Release();
-					pFormatConverter = NULL;
 				}
-				pFrame->Release();
-				pFrame = NULL;
 			}
-			pDecoder->Release();
-			pDecoder = NULL;
 		}
-		pFactory->Release();
-		pFactory = NULL;
+
 	}
+
+	//  png ファイルの読み込み
+	hr = pFactory->CreateDecoderFromFilename(L"res\\Spade1.png", 0,
+		GENERIC_READ, WICDecodeMetadataCacheOnDemand, &pDecoder);
+	if (SUCCEEDED(hr)) {
+		hr = pDecoder->GetFrame(0, &pFrame);
+		if (SUCCEEDED(hr)) {
+			hr = pFactory->CreateFormatConverter(&pFormatConverter);
+			if (SUCCEEDED(hr)) {
+				hr = pFormatConverter->Initialize(pFrame, GUID_WICPixelFormat32bppBGRA, WICBitmapDitherTypeErrorDiffusion, 0, 0, WICBitmapPaletteTypeCustom);
+				if (SUCCEEDED(hr)) {
+
+					D2D1_SIZE_U sizBitmap;
+					UINT width, height;
+					pFrame->GetSize(&width, &height);
+					sizBitmap.width = width;
+					sizBitmap.height = height;
+					hr = g_pRenderTarget->CreateBitmap(sizBitmap, bitmapProperties, &frontPicture);
+					if (SUCCEEDED(hr)) {
+						BYTE* pBuffer = new BYTE[4 * width * height];
+						double frac = 1.0 / 255.0;
+						double a;
+						pFormatConverter->CopyPixels(NULL, width * 4, width * 4 * height, pBuffer);
+						for (int row = 0; row < height; ++row) {
+							BYTE* p = pBuffer + (width * 4) * row;
+							for (int col = 0; col < width; ++col) {
+								a = frac * p[3];
+								p[0] = (BYTE)(a * p[0]);
+								p[1] = (BYTE)(a * p[1]);
+								p[2] = (BYTE)(a * p[2]);
+								p += 4;
+							}
+						}
+						frontPicture->CopyFromMemory(NULL, pBuffer, width * 4);
+						delete[] pBuffer;
+					}
+
+
+				}
+			}
+		}
+	}
+	
 }
 
-}
 
 Card::~Card()
 {

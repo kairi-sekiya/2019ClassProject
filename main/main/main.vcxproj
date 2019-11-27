@@ -156,7 +156,6 @@
     <ClInclude Include="Card.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="framework.h" />
-    <ClInclude Include="Image.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="PngTester.h" />
     <ClInclude Include="Resource.h" />
@@ -164,7 +163,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Card.cpp" />
-    <ClCompile Include="Image.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PngTester.cpp" />
   </ItemGroup>
