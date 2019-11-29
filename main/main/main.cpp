@@ -21,6 +21,7 @@ ID2D1Factory* g_pD2DFactory = NULL;      //  D2D1Factoryオブジェクト
 ID2D1HwndRenderTarget* g_pRenderTarget = NULL;    //  描画ターゲット
 ID2D1Bitmap* g_pBG = NULL;
 ID2D1Bitmap* g_pFG = NULL;
+Card* g_pCard;
 
 //! 関数 WndProc のプロトタイプ宣言
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -120,90 +121,27 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 			IID_PPV_ARGS(&pFactory)
 		);
 		if (SUCCEEDED(hr)) {
-			//  jpg ファイル test.jpg の読み込み
-			hr = pFactory->CreateDecoderFromFilename(L"res\\BackGround.jpg", 0,
-				GENERIC_READ, WICDecodeMetadataCacheOnDemand, &pDecoder);
-			if (SUCCEEDED(hr)) {
-				hr = pDecoder->GetFrame(0, &pFrame);
-				//  Get the pixel format of the image
-				hr = pFrame->GetPixelFormat(&pixelFormat);
-				if (SUCCEEDED(hr) && pixelFormat == GUID_WICPixelFormat32bppBGRA) {
-					//    読みこんだ画像が、32bit BGRA であれば、変換不要
-					hr = g_pRenderTarget->CreateBitmapFromWicBitmap(
-						pFrame,
-						&bitmapProperties,
-						&g_pBG
-					);
-				}
-
-				else if (SUCCEEDED(hr)) {
-					hr = pFactory->CreateFormatConverter(&pFormatConverter);
-					if (SUCCEEDED(hr)) {
-						hr = pFormatConverter->Initialize(pFrame, GUID_WICPixelFormat32bppBGRA, WICBitmapDitherTypeErrorDiffusion, 0, 0, WICBitmapPaletteTypeCustom);
-						if (SUCCEEDED(hr)) {
-							hr = g_pRenderTarget->CreateBitmapFromWicBitmap(
+			POINT point = { 0,0 };
+			g_pCard = new Card((float)0.25, point,
+								pFactory,
+								pDecoder,
+								pFrame,
 								pFormatConverter,
-								&bitmapProperties,
-								&g_pBG
-							);
-						}
-						pFormatConverter->Release();
-						pFormatConverter = NULL;
-					}
-					pFrame->Release();
-					pFrame = NULL;
-				}
-				pDecoder->Release();
-				pDecoder = NULL;
-			}
+								pixelFormat,
+								hr,
+								bitmapProperties,
+								g_pRenderTarget	
+								);
 
-			//  png ファイルの読み込み
-			hr = pFactory->CreateDecoderFromFilename(L"res\\torannpu-illust49.png", 0,
-				GENERIC_READ, WICDecodeMetadataCacheOnDemand, &pDecoder);
-			if (SUCCEEDED(hr)) {
-				hr = pDecoder->GetFrame(0, &pFrame);
-				if (SUCCEEDED(hr)) {
-					hr = pFactory->CreateFormatConverter(&pFormatConverter);
-					if (SUCCEEDED(hr)) {
-						hr = pFormatConverter->Initialize(pFrame, GUID_WICPixelFormat32bppBGRA, WICBitmapDitherTypeErrorDiffusion, 0, 0, WICBitmapPaletteTypeCustom);
-						if (SUCCEEDED(hr)) {
-
-							D2D1_SIZE_U sizBitmap;
-							UINT width, height;
-							pFrame->GetSize(&width, &height);
-							sizBitmap.width = width;
-							sizBitmap.height = height;
-							hr = g_pRenderTarget->CreateBitmap(sizBitmap, bitmapProperties, &g_pFG);
-							if (SUCCEEDED(hr)) {
-								BYTE* pBuffer = new BYTE[4 * width * height];
-								double frac = 1.0 / 255.0;
-								double a;
-								pFormatConverter->CopyPixels(NULL, width * 4, width * 4 * height, pBuffer);
-								for (int row = 0; row < height; ++row) {
-									BYTE* p = pBuffer + (width * 4) * row;
-									for (int col = 0; col < width; ++col) {
-										a = frac * p[3];
-										p[0] = (BYTE)(a * p[0]);
-										p[1] = (BYTE)(a * p[1]);
-										p[2] = (BYTE)(a * p[2]);
-										p += 4;
-									}
-								}
-								g_pFG->CopyFromMemory(NULL, pBuffer, width * 4);
-								delete[] pBuffer;
-							}
-
-
-						}
-						pFormatConverter->Release();
-						pFormatConverter = NULL;
-					}
-					pFrame->Release();
-					pFrame = NULL;
-				}
-				pDecoder->Release();
-				pDecoder = NULL;
-			}
+			pFormatConverter->Release();
+			pFormatConverter = NULL;
+					
+			pFrame->Release();
+			pFrame = NULL;
+				
+			pDecoder->Release();
+			pDecoder = NULL;
+			
 			pFactory->Release();
 			pFactory = NULL;
 		}
@@ -264,34 +202,36 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			g_pRenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::DarkBlue));   //!< 画面のクリア
 		
 
-			if (g_pBG != NULL) {
-				D2D1_SIZE_U sz = g_pBG->GetPixelSize();
-				D2D1_RECT_F drc, src;
-				D2D1_SIZE_F ssz = g_pRenderTarget->GetSize();
-				drc.left = 0;
-				drc.top = 0;
-				drc.right = drc.left + ssz.width;
-				drc.bottom = drc.top + ssz.height;
-				src.left = 0;
-				src.top = 0;
-				src.right = sz.width;
-				src.bottom = sz.height;
-				g_pRenderTarget->DrawBitmap(g_pBG, drc, 1.0f, D2D1_BITMAP_INTERPOLATION_MODE::D2D1_BITMAP_INTERPOLATION_MODE_LINEAR, src);
-			}
+			//if (g_pBG != NULL) {
+			//	D2D1_SIZE_U sz = g_pBG->GetPixelSize();
+			//	D2D1_RECT_F drc, src;
+			//	D2D1_SIZE_F ssz = g_pRenderTarget->GetSize();
+			//	drc.left = 0;
+			//	drc.top = 0;
+			//	drc.right = drc.left + ssz.width;
+			//	drc.bottom = drc.top + ssz.height;
+			//	src.left = 0;
+			//	src.top = 0;
+			//	src.right = sz.width;
+			//	src.bottom = sz.height;
+			//	g_pRenderTarget->DrawBitmap(g_pBG, drc, 1.0f, D2D1_BITMAP_INTERPOLATION_MODE::D2D1_BITMAP_INTERPOLATION_MODE_LINEAR, src);
+			//}
 
-			if (g_pFG != NULL) {
-				D2D1_SIZE_U sz = g_pFG->GetPixelSize();
-				D2D1_RECT_F drc, src;
-				drc.left = 0;
-				drc.top = 0;
-				drc.right = drc.left + sz.width;
-				drc.bottom = drc.top + sz.height;
-				src.left = 0;
-				src.top = 0;
-				src.right = sz.width;
-				src.bottom = sz.height;
-				g_pRenderTarget->DrawBitmap(g_pFG, drc, 1.0f, D2D1_BITMAP_INTERPOLATION_MODE::D2D1_BITMAP_INTERPOLATION_MODE_LINEAR, src);
-			}
+			//if (g_pFG != NULL) {
+			//	D2D1_SIZE_U sz = g_pFG->GetPixelSize();
+			//	D2D1_RECT_F drc, src;
+			//	drc.left = 0;
+			//	drc.top = 0;
+			//	drc.right = drc.left + sz.width;
+			//	drc.bottom = drc.top + sz.height;
+			//	src.left = 0;
+			//	src.top = 0;
+			//	src.right = sz.width;
+			//	src.bottom = sz.height;
+			//	g_pRenderTarget->DrawBitmap(g_pFG, drc, 1.0f, D2D1_BITMAP_INTERPOLATION_MODE::D2D1_BITMAP_INTERPOLATION_MODE_LINEAR, src);
+			//}
+
+			g_pCard->Draw(g_pRenderTarget);
 
 			g_pRenderTarget->EndDraw();  //  描画終了
 		}

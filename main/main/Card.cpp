@@ -3,7 +3,6 @@
 #include <wincodec.h>
 #include <d2d1.h>
 
-extern ID2D1HwndRenderTarget* g_pRenderTarget;
 Card::Card(float scale, POINT point,
 		IWICImagingFactory*& pFactory,
 		IWICBitmapDecoder*& pDecoder,
@@ -11,12 +10,14 @@ Card::Card(float scale, POINT point,
 		IWICFormatConverter*& pFormatConverter,
 		WICPixelFormatGUID& pixelFormat,
 		HRESULT& hr,
-		D2D1_BITMAP_PROPERTIES bitmapProperties
+		D2D1_BITMAP_PROPERTIES bitmapProperties,
+		ID2D1HwndRenderTarget*& g_pRenderTarget
+
 ) {
 	mScale = scale;
 	beforeMovePoint = nowPoint = point;
 
-	if (backPicture = NULL) 
+	if (backPicture == NULL) 
 	{
 		//  png ファイルの読み込み
 		hr = pFactory->CreateDecoderFromFilename(L"res\\Back.png", 0,
@@ -29,12 +30,11 @@ Card::Card(float scale, POINT point,
 					hr = pFormatConverter->Initialize(pFrame, GUID_WICPixelFormat32bppBGRA, WICBitmapDitherTypeErrorDiffusion, 0, 0, WICBitmapPaletteTypeCustom);
 					if (SUCCEEDED(hr)) {
 
-						D2D1_SIZE_U sizBitmap;
 						UINT width, height;
 						pFrame->GetSize(&width, &height);
-						sizBitmap.width = width;
-						sizBitmap.height = height;
-						hr = g_pRenderTarget->CreateBitmap(sizBitmap, bitmapProperties, &frontPicture);
+						backPictureSize.width = width;
+						backPictureSize.height = height;
+						hr = g_pRenderTarget->CreateBitmap(backPictureSize, bitmapProperties,&backPicture);
 						if (SUCCEEDED(hr)) {
 							BYTE* pBuffer = new BYTE[4 * width * height];
 							double frac = 1.0 / 255.0;
@@ -50,7 +50,7 @@ Card::Card(float scale, POINT point,
 									p += 4;
 								}
 							}
-							frontPicture->CopyFromMemory(NULL, pBuffer, width * 4);
+							backPicture->CopyFromMemory(NULL, pBuffer, width * 4);
 							delete[] pBuffer;
 						}
 
@@ -73,12 +73,11 @@ Card::Card(float scale, POINT point,
 				hr = pFormatConverter->Initialize(pFrame, GUID_WICPixelFormat32bppBGRA, WICBitmapDitherTypeErrorDiffusion, 0, 0, WICBitmapPaletteTypeCustom);
 				if (SUCCEEDED(hr)) {
 
-					D2D1_SIZE_U sizBitmap;
 					UINT width, height;
 					pFrame->GetSize(&width, &height);
-					sizBitmap.width = width;
-					sizBitmap.height = height;
-					hr = g_pRenderTarget->CreateBitmap(sizBitmap, bitmapProperties, &frontPicture);
+					frontPictureSize.width = width;
+					frontPictureSize.height = height;
+					hr = g_pRenderTarget->CreateBitmap(frontPictureSize, bitmapProperties, &frontPicture);
 					if (SUCCEEDED(hr)) {
 						BYTE* pBuffer = new BYTE[4 * width * height];
 						double frac = 1.0 / 255.0;
@@ -114,30 +113,30 @@ Card::~Card()
 
 void Card::Draw(ID2D1HwndRenderTarget* g_pRenderTarget) 
 {
-	ID2D1Bitmap* drawPicture;		// 描画する画像
-	D2D1_SIZE_U drawPictureSize;	// 画像データの縦横の大きさ
+	ID2D1Bitmap* drawnPicture;		// 描画する画像
+	D2D1_SIZE_U drawnPictureSize;	// 画像データの縦横の大きさ
 
 	if (isFront) 
 	{
-		drawPicture = frontPicture;
-		drawPictureSize = frontPictureSize;
+		drawnPicture = frontPicture;
+		drawnPictureSize = frontPictureSize;
 	}
 	else 
 	{
-		drawPicture = backPicture;
-		drawPictureSize = backPictureSize;
+		drawnPicture = backPicture;
+		drawnPictureSize = backPictureSize;
 	}
 
 	D2D1_RECT_F drc, src;
 	drc.left = 0;
 	drc.top = 0;
-	drc.right = drc.left + drawPictureSize.width * mScale;
-	drc.bottom = drc.top + drawPictureSize.height * mScale;
+	drc.right = drc.left + drawnPictureSize.width * mScale;
+	drc.bottom = drc.top + drawnPictureSize.height * mScale;
 	src.left = 0;
 	src.top = 0;
-	src.right = drawPictureSize.width * mScale;
-	src.bottom = drawPictureSize.height * mScale;
-	g_pRenderTarget->DrawBitmap(drawPicture, drc, 1.0f, D2D1_BITMAP_INTERPOLATION_MODE::D2D1_BITMAP_INTERPOLATION_MODE_LINEAR, src);
+	src.right = drawnPictureSize.width;
+	src.bottom = drawnPictureSize.height;
+	g_pRenderTarget->DrawBitmap(drawnPicture, drc, 1.0f, D2D1_BITMAP_INTERPOLATION_MODE::D2D1_BITMAP_INTERPOLATION_MODE_LINEAR, src);
 
 }
 

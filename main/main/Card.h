@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include<d2d1.h>
+#include<wincodec.h>
 
 class Card
 {
@@ -13,7 +14,8 @@ public:
 		IWICFormatConverter*& pFormatConverter,
 		WICPixelFormatGUID& pixelFormat,
 		HRESULT& hr,
-		D2D1_BITMAP_PROPERTIES bitmapProperties
+		D2D1_BITMAP_PROPERTIES bitmapProperties,
+		ID2D1HwndRenderTarget*& g_pRenderTarget
 		);
 
 	~Card();
