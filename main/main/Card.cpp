@@ -1,12 +1,14 @@
 #include "Card.h"
 #include "Common.h"
+#include "Time.h"
 #include <wincodec.h>
 #include <d2d1.h>
 
 #pragma comment(lib,"d2d1.lib")
-extern double g_dblFrame;
-extern double g_deltatime;
+#define CARD_MOVE_DECAY 0.8
 
+
+extern Time* g_pTime;
 extern ID2D1HwndRenderTarget* g_pRenderTarget;
 extern ID2D1Factory* g_pFactory;
 Card::Card(float scale, POINT point,
@@ -176,7 +178,10 @@ void Card::SetTargetPoint(POINT targetPoint)
 
 void Card::Move(float size) 
 {
-	g_deltatime;
+	LARGE_INTEGER deltaTime;
+	deltaTime = g_pTime->GetDeltaTime();
+	moveTime.QuadPart += deltaTime.QuadPart;
+	
 }
 
 void Card::Warp(POINT target) {

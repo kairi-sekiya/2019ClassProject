@@ -36,7 +36,7 @@ private:
 
 	float mScale;	// 画像の縮尺 
 
-	int moveTime = 0;		// 移動開始からの時間、マイクロ秒単位
+	LARGE_INTEGER moveTime;		// 移動開始からの時間
 
 	int card;				// 2桁目まで数字、3桁目にマークの情報
 	bool isFront = false;		// 表裏 falseで裏

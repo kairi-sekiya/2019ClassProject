@@ -9,6 +9,8 @@
 #include "framework.h"
 #include "Common.h"
 #include "Card.h"
+#include "Time.h"
+
 #include <crtdbg.h>
 #include <tchar.h>
 #include <stdio.h>
@@ -22,17 +24,7 @@ ID2D1HwndRenderTarget* g_pRenderTarget = NULL;    //  描画ターゲット
 ID2D1Bitmap* g_pBG = NULL;
 ID2D1Bitmap* g_pFG = NULL;
 Card* g_pCard;
-
-
-#define FPS         30
-#define INTERVAL    (1.0/FPS)
-double  g_dblDenominator;
-double  g_dblFrame;
-double g_deltaTime;
-__int64 g_i64OldTimer;
-
-double timer = 0;
-int warpCount = 0;
+Time* g_pTime;
 
 //! 関数 WndProc のプロトタイプ宣言
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -127,46 +119,19 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 	}
 	InvalidateRect(hWnd, NULL, false);
 
-	::QueryPerformanceCounter((LARGE_INTEGER*)& g_i64OldTimer);
-	__int64    i64Tmp;
-	::QueryPerformanceFrequency((LARGE_INTEGER*)& i64Tmp);
-	g_dblDenominator = 1.0 / (double)i64Tmp;
-	g_dblFrame = 0.0f;
+	g_pTime = new Time();
 
 	//  (2)メッセージループ
 	MSG    msg;
 	while (true) {
 		if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
-			if (timer > 3.0f) {
-				warpCount++;
-				POINT warpTarget = { warpCount * 100,warpCount * 100 };
-				g_pCard->Warp(warpTarget);
-				timer = 0;
-			}
-
 			if (msg.message == WM_QUIT)
 				break;
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-		else {
-
-			double    t;
-
-			::QueryPerformanceCounter((LARGE_INTEGER*)& i64Tmp);
-
-			t = (i64Tmp - g_i64OldTimer) * g_dblDenominator;
-			g_i64OldTimer = i64Tmp;
-			g_dblFrame += t;
-			g_deltaTime = t;
-			timer += t;
-
-			if (g_dblFrame >= INTERVAL) {
-				int    c = (int)(g_dblFrame / INTERVAL);
-				g_dblFrame -= INTERVAL * c;
-				InvalidateRect(hWnd, NULL, false);
-			}
-
+		else 
+		{
 		}
 	}
 
@@ -188,6 +153,9 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 
 	g_pCard->Release();
 	g_pCard = NULL;
+
+	delete g_pTime;
+	g_pTime = NULL;
 
 	CoUninitialize();
 	return (int)msg.wParam;
