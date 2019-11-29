@@ -23,6 +23,17 @@ ID2D1Bitmap* g_pBG = NULL;
 ID2D1Bitmap* g_pFG = NULL;
 Card* g_pCard;
 
+
+#define FPS         30
+#define INTERVAL    (1.0/FPS)
+double  g_dblDenominator;
+double  g_dblFrame;
+double g_deltaTime;
+__int64 g_i64OldTimer;
+
+double timer = 0;
+int warpCount = 0;
+
 //! 関数 WndProc のプロトタイプ宣言
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -102,11 +113,6 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 	}
 	{
 		//  画像の読み込み
-		IWICImagingFactory* pFactory = NULL;
-		IWICBitmapDecoder* pDecoder = NULL;
-		IWICBitmapFrameDecode* pFrame = NULL;
-		IWICFormatConverter* pFormatConverter = NULL;
-		WICPixelFormatGUID pixelFormat;
 
 		D2D1_BITMAP_PROPERTIES bitmapProperties;
 		bitmapProperties.dpiX = 96.0f;
@@ -114,50 +120,53 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 		bitmapProperties.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
 		bitmapProperties.pixelFormat.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED;
 
-		HRESULT hr = CoCreateInstance(
-			CLSID_WICImagingFactory,
-			nullptr,
-			CLSCTX_INPROC_SERVER,
-			IID_PPV_ARGS(&pFactory)
-		);
-		if (SUCCEEDED(hr)) {
-			POINT point = { 0,0 };
-			g_pCard = new Card((float)0.25, point,
-								pFactory,
-								pDecoder,
-								pFrame,
-								pFormatConverter,
-								pixelFormat,
-								hr,
-								bitmapProperties,
-								g_pRenderTarget	
-								);
-
-			pFormatConverter->Release();
-			pFormatConverter = NULL;
-					
-			pFrame->Release();
-			pFrame = NULL;
-				
-			pDecoder->Release();
-			pDecoder = NULL;
-			
-			pFactory->Release();
-			pFactory = NULL;
-		}
+		POINT point = { 0,0 };
+		g_pCard = new Card((float)0.25, point,
+							bitmapProperties
+							);
 	}
 	InvalidateRect(hWnd, NULL, false);
 
+	::QueryPerformanceCounter((LARGE_INTEGER*)& g_i64OldTimer);
+	__int64    i64Tmp;
+	::QueryPerformanceFrequency((LARGE_INTEGER*)& i64Tmp);
+	g_dblDenominator = 1.0 / (double)i64Tmp;
+	g_dblFrame = 0.0f;
+
 	//  (2)メッセージループ
-	MSG        msg;
+	MSG    msg;
 	while (true) {
 		if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
+			if (timer > 3.0f) {
+				warpCount++;
+				POINT warpTarget = { warpCount * 100,warpCount * 100 };
+				g_pCard->Warp(warpTarget);
+				timer = 0;
+			}
+
 			if (msg.message == WM_QUIT)
 				break;
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
 		else {
+
+			double    t;
+
+			::QueryPerformanceCounter((LARGE_INTEGER*)& i64Tmp);
+
+			t = (i64Tmp - g_i64OldTimer) * g_dblDenominator;
+			g_i64OldTimer = i64Tmp;
+			g_dblFrame += t;
+			g_deltaTime = t;
+			timer += t;
+
+			if (g_dblFrame >= INTERVAL) {
+				int    c = (int)(g_dblFrame / INTERVAL);
+				g_dblFrame -= INTERVAL * c;
+				InvalidateRect(hWnd, NULL, false);
+			}
+
 		}
 	}
 
@@ -176,6 +185,9 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 
 	g_pD2DFactory->Release(); //!< ファクトリーの解放
 	g_pD2DFactory = NULL;
+
+	g_pCard->Release();
+	g_pCard = NULL;
 
 	CoUninitialize();
 	return (int)msg.wParam;

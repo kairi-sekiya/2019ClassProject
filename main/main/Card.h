@@ -8,14 +8,7 @@ class Card
 {
 public:
 	Card(float scale,POINT point, 
-		IWICImagingFactory*& pFactory,
-		IWICBitmapDecoder*& pDecoder,
-		IWICBitmapFrameDecode*& pFrame,
-		IWICFormatConverter*& pFormatConverter,
-		WICPixelFormatGUID& pixelFormat,
-		HRESULT& hr,
-		D2D1_BITMAP_PROPERTIES bitmapProperties,
-		ID2D1HwndRenderTarget*& g_pRenderTarget
+		D2D1_BITMAP_PROPERTIES bitmapProperties
 		);
 
 	~Card();
@@ -26,6 +19,8 @@ public:
 	void Move(float size);				// targetPointへ少し移動する
 	void Warp(POINT target);			// 1フレームで引数の位置へ移動する
 	void TurnOver();						// fromtOrBack を裏返す
+	void Release();						// newで確保したメモリを解放する
+	void GetIsMoving();
 
 private:
 	ID2D1Bitmap* backPicture;		// 裏側画像データ 
@@ -37,6 +32,7 @@ private:
 	POINT beforeMovePoint;		// Moveで移動する際に移動前の位置を保存
 	POINT nowPoint;				// 現在の位置を保存する
 	POINT targetPoint;			// 目的地を保存する
+	double moveDistance;		// 移動前と目的地の間の距離を保存
 
 	float mScale;	// 画像の縮尺 
 
@@ -44,7 +40,6 @@ private:
 
 	int card;				// 2桁目まで数字、3桁目にマークの情報
 	bool isFront = false;		// 表裏 falseで裏
-
-private:
+	bool isMoving = false;
 };
 

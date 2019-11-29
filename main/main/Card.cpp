@@ -3,113 +3,141 @@
 #include <wincodec.h>
 #include <d2d1.h>
 
-Card::Card(float scale, POINT point,
-		IWICImagingFactory*& pFactory,
-		IWICBitmapDecoder*& pDecoder,
-		IWICBitmapFrameDecode*& pFrame,
-		IWICFormatConverter*& pFormatConverter,
-		WICPixelFormatGUID& pixelFormat,
-		HRESULT& hr,
-		D2D1_BITMAP_PROPERTIES bitmapProperties,
-		ID2D1HwndRenderTarget*& g_pRenderTarget
+#pragma comment(lib,"d2d1.lib")
+extern double g_dblFrame;
+extern double g_deltatime;
 
+extern ID2D1HwndRenderTarget* g_pRenderTarget;
+extern ID2D1Factory* g_pFactory;
+Card::Card(float scale, POINT point,
+		D2D1_BITMAP_PROPERTIES bitmapProperties
 ) {
 	mScale = scale;
 	beforeMovePoint = nowPoint = point;
 
-	if (backPicture == NULL) 
 	{
-		//  png ファイルの読み込み
-		hr = pFactory->CreateDecoderFromFilename(L"res\\Back.png", 0,
-			GENERIC_READ, WICDecodeMetadataCacheOnDemand, &pDecoder);
-		if (SUCCEEDED(hr)) {
-			hr = pDecoder->GetFrame(0, &pFrame);
-			if (SUCCEEDED(hr)) {
-				hr = pFactory->CreateFormatConverter(&pFormatConverter);
-				if (SUCCEEDED(hr)) {
-					hr = pFormatConverter->Initialize(pFrame, GUID_WICPixelFormat32bppBGRA, WICBitmapDitherTypeErrorDiffusion, 0, 0, WICBitmapPaletteTypeCustom);
-					if (SUCCEEDED(hr)) {
+		IWICImagingFactory* pFactory = NULL;
+		HRESULT hr;
+		IWICBitmapDecoder* pDecoder = NULL;
+		IWICBitmapFrameDecode* pFrame = NULL;
+		IWICFormatConverter* pFormatConverter = NULL;
+		WICPixelFormatGUID pixelFormat;
 
-						UINT width, height;
-						pFrame->GetSize(&width, &height);
-						backPictureSize.width = width;
-						backPictureSize.height = height;
-						hr = g_pRenderTarget->CreateBitmap(backPictureSize, bitmapProperties,&backPicture);
+		hr = CoCreateInstance(
+			CLSID_WICImagingFactory,
+			nullptr,
+			CLSCTX_INPROC_SERVER,
+			IID_PPV_ARGS(&pFactory)
+		);
+		if (SUCCEEDED(hr)) 
+		{
+			if (backPicture == NULL) 
+			{
+				//  png ファイルの読み込み
+				hr = pFactory->CreateDecoderFromFilename(L"res\\Back.png", 0,
+					GENERIC_READ, WICDecodeMetadataCacheOnDemand, &pDecoder);
+				if (SUCCEEDED(hr)) {
+					hr = pDecoder->GetFrame(0, &pFrame);
+					if (SUCCEEDED(hr)) {
+						hr = pFactory->CreateFormatConverter(&pFormatConverter);
 						if (SUCCEEDED(hr)) {
-							BYTE* pBuffer = new BYTE[4 * width * height];
-							double frac = 1.0 / 255.0;
-							double a;
-							pFormatConverter->CopyPixels(NULL, width * 4, width * 4 * height, pBuffer);
-							for (int row = 0; row < height; ++row) {
-								BYTE* p = pBuffer + (width * 4) * row;
-								for (int col = 0; col < width; ++col) {
-									a = frac * p[3];
-									p[0] = (BYTE)(a * p[0]);
-									p[1] = (BYTE)(a * p[1]);
-									p[2] = (BYTE)(a * p[2]);
-									p += 4;
+							hr = pFormatConverter->Initialize(pFrame, GUID_WICPixelFormat32bppBGRA, WICBitmapDitherTypeErrorDiffusion, 0, 0, WICBitmapPaletteTypeCustom);
+							if (SUCCEEDED(hr)) {
+
+								UINT width, height;
+								pFrame->GetSize(&width, &height);
+								backPictureSize.width = width;
+								backPictureSize.height = height;
+								hr = g_pRenderTarget->CreateBitmap(backPictureSize, bitmapProperties,&backPicture);
+								if (SUCCEEDED(hr)) {
+									BYTE* pBuffer = new BYTE[4 * width * height];
+									double frac = 1.0 / 255.0;
+									double a;
+									pFormatConverter->CopyPixels(NULL, width * 4, width * 4 * height, pBuffer);
+									for (int row = 0; row < height; ++row) {
+										BYTE* p = pBuffer + (width * 4) * row;
+										for (int col = 0; col < width; ++col) {
+											a = frac * p[3];
+											p[0] = (BYTE)(a * p[0]);
+											p[1] = (BYTE)(a * p[1]);
+											p[2] = (BYTE)(a * p[2]);
+											p += 4;
+										}
+									}
+									backPicture->CopyFromMemory(NULL, pBuffer, width * 4);
+									delete[] pBuffer;
 								}
 							}
-							backPicture->CopyFromMemory(NULL, pBuffer, width * 4);
-							delete[] pBuffer;
+							pFormatConverter->Release();
 						}
-
-
+						pFrame->Release();
 					}
+					pDecoder->Release();
 				}
 			}
-		}
 
-	}
-
-	//  png ファイルの読み込み
-	hr = pFactory->CreateDecoderFromFilename(L"res\\Spade1.png", 0,
-		GENERIC_READ, WICDecodeMetadataCacheOnDemand, &pDecoder);
-	if (SUCCEEDED(hr)) {
-		hr = pDecoder->GetFrame(0, &pFrame);
-		if (SUCCEEDED(hr)) {
-			hr = pFactory->CreateFormatConverter(&pFormatConverter);
+			//  png ファイルの読み込み
+			hr = pFactory->CreateDecoderFromFilename(L"res\\Spade1.png", 0,
+				GENERIC_READ, WICDecodeMetadataCacheOnDemand, &pDecoder);
 			if (SUCCEEDED(hr)) {
-				hr = pFormatConverter->Initialize(pFrame, GUID_WICPixelFormat32bppBGRA, WICBitmapDitherTypeErrorDiffusion, 0, 0, WICBitmapPaletteTypeCustom);
+				hr = pDecoder->GetFrame(0, &pFrame);
 				if (SUCCEEDED(hr)) {
-
-					UINT width, height;
-					pFrame->GetSize(&width, &height);
-					frontPictureSize.width = width;
-					frontPictureSize.height = height;
-					hr = g_pRenderTarget->CreateBitmap(frontPictureSize, bitmapProperties, &frontPicture);
+					hr = pFactory->CreateFormatConverter(&pFormatConverter);
 					if (SUCCEEDED(hr)) {
-						BYTE* pBuffer = new BYTE[4 * width * height];
-						double frac = 1.0 / 255.0;
-						double a;
-						pFormatConverter->CopyPixels(NULL, width * 4, width * 4 * height, pBuffer);
-						for (int row = 0; row < height; ++row) {
-							BYTE* p = pBuffer + (width * 4) * row;
-							for (int col = 0; col < width; ++col) {
-								a = frac * p[3];
-								p[0] = (BYTE)(a * p[0]);
-								p[1] = (BYTE)(a * p[1]);
-								p[2] = (BYTE)(a * p[2]);
-								p += 4;
+						hr = pFormatConverter->Initialize(pFrame, GUID_WICPixelFormat32bppBGRA, WICBitmapDitherTypeErrorDiffusion, 0, 0, WICBitmapPaletteTypeCustom);
+						if (SUCCEEDED(hr)) {
+
+							UINT width, height;
+							pFrame->GetSize(&width, &height);
+							frontPictureSize.width = width;
+							frontPictureSize.height = height;
+							hr = g_pRenderTarget->CreateBitmap(frontPictureSize, bitmapProperties, &frontPicture);
+							if (SUCCEEDED(hr)) {
+								BYTE* pBuffer = new BYTE[4 * width * height];
+								double frac = 1.0 / 255.0;
+								double a;
+								pFormatConverter->CopyPixels(NULL, width * 4, width * 4 * height, pBuffer);
+								for (int row = 0; row < height; ++row) {
+									BYTE* p = pBuffer + (width * 4) * row;
+									for (int col = 0; col < width; ++col) {
+										a = frac * p[3];
+										p[0] = (BYTE)(a * p[0]);
+										p[1] = (BYTE)(a * p[1]);
+										p[2] = (BYTE)(a * p[2]);
+										p += 4;
+									}
+								}
+								frontPicture->CopyFromMemory(NULL, pBuffer, width * 4);
+								delete[] pBuffer;
 							}
 						}
-						frontPicture->CopyFromMemory(NULL, pBuffer, width * 4);
-						delete[] pBuffer;
 					}
-
-
+					pFormatConverter->Release();
+					pFormatConverter = NULL;
 				}
+				pFrame->Release();
+				pFrame = NULL;
 			}
+			pDecoder->Release();
+			pDecoder = NULL;
 		}
+		pFactory->Release();
+		pFactory = NULL;
+
 	}
-	
 }
 
 
 Card::~Card()
 {
-
 }
+
+void Card::Release() 
+{
+	if(frontPicture != NULL)frontPicture->Release(); frontPicture = NULL;
+	if(backPicture != NULL)backPicture->Release(); backPicture = NULL;
+}
+
 
 void Card::Draw(ID2D1HwndRenderTarget* g_pRenderTarget) 
 {
@@ -128,8 +156,8 @@ void Card::Draw(ID2D1HwndRenderTarget* g_pRenderTarget)
 	}
 
 	D2D1_RECT_F drc, src;
-	drc.left = 0;
-	drc.top = 0;
+	drc.left = nowPoint.x;
+	drc.top = nowPoint.y;
 	drc.right = drc.left + drawnPictureSize.width * mScale;
 	drc.bottom = drc.top + drawnPictureSize.height * mScale;
 	src.left = 0;
@@ -143,11 +171,12 @@ void Card::Draw(ID2D1HwndRenderTarget* g_pRenderTarget)
 void Card::SetTargetPoint(POINT targetPoint) 
 {
 	this->targetPoint = targetPoint;
+	isMoving = true;
 }
 
 void Card::Move(float size) 
 {
-	
+	g_deltatime;
 }
 
 void Card::Warp(POINT target) {
