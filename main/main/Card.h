@@ -1,8 +1,6 @@
 #pragma once
 
-#include "Common.h"
-#include<d2d1.h>
-#include<wincodec.h>
+#include"image.h"
 
 class Card
 {
@@ -23,11 +21,8 @@ public:
 	void GetIsMoving();
 
 private:
-	ID2D1Bitmap* backPicture;		// 裏側画像データ 
-	D2D1_SIZE_U backPictureSize;	// 画像データの縦横の大きさ
-
-	ID2D1Bitmap* frontPicture;		// 表側画像データ
-	D2D1_SIZE_U frontPictureSize;	// 画像データの縦横の大きさ
+	Image* pFrontPicture;
+	Image* pBackPicture;
 	
 	POINT beforeMovePoint;		// Moveで移動する際に移動前の位置を保存
 	POINT nowPoint;				// 現在の位置を保存する

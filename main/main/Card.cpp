@@ -1,12 +1,11 @@
-#include "Card.h"
-#include "Common.h"
-#include "Time.h"
-#include <wincodec.h>
-#include <d2d1.h>
+#include"Card.h"
+#include"Time.h"
 
 #pragma comment(lib,"d2d1.lib")
-#define CARD_MOVE_DECAY 0.8
 
+#define CARD_MOVE_DECAY 0.8f
+#define CARD_MOVE_TIME 0.5f
+#define CARD_MOVE_MINIMAM_SPEED
 
 extern Time* g_pTime;
 extern ID2D1HwndRenderTarget* g_pRenderTarget;
@@ -33,7 +32,7 @@ Card::Card(float scale, POINT point,
 		);
 		if (SUCCEEDED(hr)) 
 		{
-			if (backPicture == NULL) 
+			if (pBackPicture == NULL) 
 			{
 				//  png ƒtƒ@ƒCƒ‹‚Ì“Ç‚Ýž‚Ý
 				hr = pFactory->CreateDecoderFromFilename(L"res\\Back.png", 0,
@@ -48,9 +47,9 @@ Card::Card(float scale, POINT point,
 
 								UINT width, height;
 								pFrame->GetSize(&width, &height);
-								backPictureSize.width = width;
-								backPictureSize.height = height;
-								hr = g_pRenderTarget->CreateBitmap(backPictureSize, bitmapProperties,&backPicture);
+								pBackPicture->GetImageSize.width = width;
+								pBackPicture->GetImageSize.height = height;
+								hr = g_pRenderTarget->CreateBitmap(pBackPicture->GetImageSize(), bitmapProperties,&pBackPicture);
 								if (SUCCEEDED(hr)) {
 									BYTE* pBuffer = new BYTE[4 * width * height];
 									double frac = 1.0 / 255.0;
@@ -66,7 +65,7 @@ Card::Card(float scale, POINT point,
 											p += 4;
 										}
 									}
-									backPicture->CopyFromMemory(NULL, pBuffer, width * 4);
+									pBackPicture->GetImage()->CopyFromMemory(NULL, pBuffer, width * 4);
 									delete[] pBuffer;
 								}
 							}
@@ -91,9 +90,9 @@ Card::Card(float scale, POINT point,
 
 							UINT width, height;
 							pFrame->GetSize(&width, &height);
-							frontPictureSize.width = width;
-							frontPictureSize.height = height;
-							hr = g_pRenderTarget->CreateBitmap(frontPictureSize, bitmapProperties, &frontPicture);
+							pFrontPicture->GetImageSize().width = width;
+							pFrontPicture->GetImageSize().height = height;
+							hr = g_pRenderTarget->CreateBitmap(pFrontPicture->GetImageSize(), bitmapProperties, &pFrontPicture);
 							if (SUCCEEDED(hr)) {
 								BYTE* pBuffer = new BYTE[4 * width * height];
 								double frac = 1.0 / 255.0;
@@ -109,7 +108,7 @@ Card::Card(float scale, POINT point,
 										p += 4;
 									}
 								}
-								frontPicture->CopyFromMemory(NULL, pBuffer, width * 4);
+								pFrontPicture->GetImage()->CopyFromMemory(NULL, pBuffer, width * 4);
 								delete[] pBuffer;
 							}
 						}
@@ -136,8 +135,8 @@ Card::~Card()
 
 void Card::Release() 
 {
-	if(frontPicture != NULL)frontPicture->Release(); frontPicture = NULL;
-	if(backPicture != NULL)backPicture->Release(); backPicture = NULL;
+	if(pFrontPicture != NULL)pFrontPicture->Release(); pFrontPicture = NULL;
+	if(pBackPicture != NULL)pBackPicture->Release(); pBackPicture = NULL;
 }
 
 
@@ -148,13 +147,13 @@ void Card::Draw(ID2D1HwndRenderTarget* g_pRenderTarget)
 
 	if (isFront) 
 	{
-		drawnPicture = frontPicture;
-		drawnPictureSize = frontPictureSize;
+		drawnPicture = pFrontPicture;
+		drawnPictureSize = pFrontPicture->;
 	}
 	else 
 	{
-		drawnPicture = backPicture;
-		drawnPictureSize = backPictureSize;
+		drawnPicture = pBackPicture;
+		drawnPictureSize = pBackPictureSize;
 	}
 
 	D2D1_RECT_F drc, src;
@@ -174,14 +173,18 @@ void Card::SetTargetPoint(POINT targetPoint)
 {
 	this->targetPoint = targetPoint;
 	isMoving = true;
+	moveDistance = hypot(beforeMovePoint.x,beforeMovePoint.y);
 }
 
 void Card::Move(float size) 
 {
+	if (!isMoving) return;
 	LARGE_INTEGER deltaTime;
 	deltaTime = g_pTime->GetDeltaTime();
 	moveTime.QuadPart += deltaTime.QuadPart;
-	
+	double nowMoveDecay = 1l - ((moveTime.QuadPart * 1000)*(moveTime.QuadPart * 1000) * CARD_MOVE_DECAY);
+	nowPoint.x = cos(moveDistance * nowMoveDecay * deltaTime.QuadPart);
+	nowPoint.y = sin(moveDistance * nowMoveDecay * deltaTime.QuadPart);
 }
 
 void Card::Warp(POINT target) {

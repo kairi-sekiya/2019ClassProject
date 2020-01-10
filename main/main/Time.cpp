@@ -19,6 +19,6 @@ void Time::UpdateParameters()
 	oldTime = nowTime;
 }
 
-inline LARGE_INTEGER Time::GetDeltaTime() {
+LARGE_INTEGER Time::GetDeltaTime() {
 	return deltaTime;
 }

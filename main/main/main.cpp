@@ -5,17 +5,7 @@
  * 基本のウィンドウズプログラム
  */
 
-#include "main.h"
-#include "framework.h"
-#include "Common.h"
-#include "Card.h"
-#include "Time.h"
-
-#include <crtdbg.h>
-#include <tchar.h>
-#include <stdio.h>
-#include <d2d1.h>   //!< Direct2D に必要
-#include <wincodec.h>
+#include "include.h"
 
 #pragma comment(lib,"d2d1.lib")    //!< direct2d に必要
 
@@ -60,12 +50,12 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 	wcex.hCursor = LoadCursor(NULL, MAKEINTRESOURCE(IDC_ARROW));
 	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	wcex.lpszMenuName = NULL;
-	wcex.lpszClassName = _T("Windows06");  //  ウィンドウクラス名
+	wcex.lpszClassName = _T("PlayingCardGames");  //  ウィンドウクラス名
 	wcex.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 	RegisterClassEx(&wcex);
 
 	//  (1)-b ウィンドウの生成
-	hWnd = CreateWindowEx(WS_EX_OVERLAPPEDWINDOW, wcex.lpszClassName, _T("Windows01"),
+	hWnd = CreateWindowEx(WS_EX_OVERLAPPEDWINDOW, wcex.lpszClassName, _T("PlayingCardGames"),
 		WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
 		CW_USEDEFAULT, 0, WINDOW_WIDTH,WINDOW_HEIGHT, NULL, NULL, hInstance, NULL);
 	if (!hWnd)
@@ -121,9 +111,18 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 
 	g_pTime = new Time();
 
+	double timer = 0;
+
 	//  (2)メッセージループ
 	MSG    msg;
 	while (true) {
+		timer += g_pTime->GetDeltaTime().QuadPart;
+		//if (timer > 3000) 
+		{
+			g_pCard->SetTargetPoint({100,100});
+		}
+		g_pCard->Move(0.25);
+
 		if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
 			if (msg.message == WM_QUIT)
 				break;
@@ -132,6 +131,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 		}
 		else 
 		{
+			InvalidateRect(hWnd, NULL, true);
 		}
 	}
 
@@ -215,7 +215,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			g_pRenderTarget->EndDraw();  //  描画終了
 		}
-
 		ValidateRect(hWnd, NULL);
 
 		break;

@@ -1,12 +1,12 @@
 #pragma once
-#include <d2d1.h>
+#include"include.h"
 
 class Time
 {
 public:
 	Time();
 
-	inline LARGE_INTEGER GetDeltaTime();
+	LARGE_INTEGER GetDeltaTime();
 	void UpdateParameters();
 private:
 	LARGE_INTEGER frequency;
